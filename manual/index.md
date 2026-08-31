@@ -183,3 +183,53 @@ check-zhora:
 ````
 
 Ejecutá `make check-zhora` antes de cada commit para asegurar que tu código conserve el estado de aprobación.
+
+---
+
+(manual-zhora-arquitectura)=
+## 7. Arquitectura Interna y Mecanismo Técnico
+
+La herramienta **`zhora`** implementa un motor de alta precisión basado en:
+
+- **Tecnología Núcleo:** `Clang Macro Expander + Preprocessor Security Tokenizer + Inline Function Transformer`.
+- **Aislamiento y Determinismo:** Diseñada para operar sin efectos colaterales en entornos de integración continua (CI), terminales de estudiantes y servidores docentes headless.
+- **Manejo de Errores Pedagógico:** Todo fallo de sintaxis, memoria o lógica se traduce en una acción prescriptiva concreta con su respectiva justificación técnica.
+
+---
+
+(manual-zhora-ecosistema)=
+## 8. Integración y Conexión con el Ecosistema
+
+````{note}
+Ninguna herramienta opera de forma aislada. **`zhora`** forma parte del pipeline integral de evaluación, verificación y enseñanza de la cátedra.
+````
+
+### Diagrama de Flujo e Interoperabilidad
+
+````{mermaid}
+graph TD
+    HDR[include/*.h: Macros #define] --> ZHO[Zhora: Auditor de Macros]
+    ZHO -->|Detección de Falta de Paréntesis| EXP[Clang Macro Expander]
+    ZHO -->|Inyección de Paréntesis Protectores| GAF[Gaff: Formateo y Estilo]
+    ZHO -->|Transformación a static inline| CRB[Corbel: Documentación de APIs]
+    ZHO -->|Reglas de Preprocesador 0x4000h| RIP[Ripley: Microkernel de Reglas]
+````
+
+### Matriz de Intercambio de Datos
+
+| Canal | Herramientas Conectadas | Tipo de Datos Transferidos |
+| :--- | :--- | :--- |
+| **Entradas (Inputs)** | - `Macros #define en headers y código C` | Código fuente, AST, binarios, testcases, contratos |
+| **Salidas (Outputs)** | - `ripley (reglas 0x4000h de macros)`
+- `corbel (funciones inline tipadas)` | Informes Markdown, diagnósticos Rich, JSON, actas |
+| **Sincronización** | `ripley`, `corbel`, `gaff` | Validación cruzada, flags compartidos y autofix |
+
+### Pipeline de Integración Recomendado
+
+Podés encadenar `zhora` con otras herramientas del ecosistema en una única línea de comando:
+
+````{code-block} bash
+# Pipeline de integración típico
+zhora audit include/macros.h && zhora fix include/macros.h
+````
+
