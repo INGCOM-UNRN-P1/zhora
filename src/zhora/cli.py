@@ -20,7 +20,10 @@ console = Console()
 
 def generar_seccion_markdown(report: MacroAuditReport) -> str:
     """Genera sección de auditoría de seguridad en macros para Dredd."""
-    lines = ["## Seguridad en Macros del Preprocesador (Zhora)\n"]
+    lines = [
+        "<!-- dredd-section: zhora v1.0.0 -->\n",
+        "## Seguridad en Macros del Preprocesador (Zhora)\n",
+    ]
     lines.append(f"- **Archivos escaneados:** {report.total_files_scanned}")
     lines.append(f"- **Problemas en macros:** {len(report.issues)}\n")
     if report.passed:
@@ -30,7 +33,11 @@ def generar_seccion_markdown(report: MacroAuditReport) -> str:
         lines.append("| Macro | Ubicación | Código | Severidad | Diagnóstico | Sugerencia |")
         lines.append("| :--- | :--- | :---: | :---: | :--- | :--- |")
         for iss in report.issues:
-            lines.append(f"| `{iss.macro_name}` | `{Path(iss.file_path).name}:{iss.line_number}` | `{iss.code}` | **{iss.severity}** | {iss.message} | {iss.suggestion} |")
+            mac_limpio = iss.macro_name.replace("|", "&#124;")
+            loc_limpio = f"{Path(iss.file_path).name}:{iss.line_number}".replace("|", "&#124;")
+            msg_limpio = iss.message.replace("|", "&#124;")
+            sug_limpio = iss.suggestion.replace("|", "&#124;")
+            lines.append(f"| `{mac_limpio}` | `{loc_limpio}` | `{iss.code}` | **{iss.severity}** | {msg_limpio} | {sug_limpio} |")
         lines.append("")
     return "\n".join(lines)
 
