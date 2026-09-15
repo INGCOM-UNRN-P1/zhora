@@ -7,11 +7,10 @@
 ## 🎯 Alcance
 
 ### Qué cubre
-- Linter pedagógico y auditor de seguridad de macros del preprocesador en C (`#define`, reglas `0x40XXh`).
-- Verificación obligatoria de paréntesis defensivos en parámetros y cuerpo de macros (`0x4001h`).
-- Exigencia de nomenclatura en mayúsculas (`UPPER_SNAKE_CASE`) para identificadores de macros (`0x4002h`).
-- Exigencia de encapsulamiento en bloques `do { ... } while(0)` para macros multisentencia (`0x4003h`).
-- Detección de efectos colaterales indeseados por evaluación múltiple de argumentos en llamadas a macros.
+- Linter pedagógico y auditor de seguridad de macros del preprocesador en C (`#define`, reglas `ZH001` a `ZH004`).
+- Verificación defensiva de paréntesis en parámetros y cuerpo de macros (`ZH003`, `ZH004`).
+- Detección de puntos y coma espurios al final de definiciones de macros (`ZH001`).
+- Detección de efectos colaterales indeseados por evaluación múltiple de argumentos en llamadas a macros (`ZH002`).
 
 ### Qué no cubre (Límites y Delegación)
 - Auditoría de inclusión de cabeceras o dependencias circulares (delegado a `wierzbowski`).
@@ -38,6 +37,10 @@
 ```bash
 # Auditar macros en archivos y carpetas
 zhora audit src/
+zhora check src/
+
+# Generar informe en formato Markdown
+zhora report src/
 
 # Salida estructurada JSON
 zhora audit src/ --json
