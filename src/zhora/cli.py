@@ -217,6 +217,65 @@ def rules_cmd(
     console.print(tabla)
 
 
+@app.command("doctor")
+def doctor_cmd(
+    json_output: bool = typer.Option(False, "--json", help="Emitir diagnóstico en formato JSON estructurado."),
+) -> None:
+    """Verifica el estado del entorno de auditoría de macros ZHORA (Tree-Sitter C, Python)."""
+    import sys
+    diagnostico = []
+
+    py_ok = sys.version_info >= (3, 10)
+    diagnostico.append({
+        "componente": "Python Runtime",
+        "estado": "OK" if py_ok else "ERROR",
+        "requerido": True,
+        "detalle": f"Python {sys.version.split()[0]}",
+    })
+
+    ts_ok = False
+    try:
+        from zhora.core.macro_linter import get_c_parser
+        get_c_parser()
+        ts_ok = True
+        ts_det = "Gramática C AST cargada exitosamente"
+    except Exception as e:
+        ts_det = str(e)
+    diagnostico.append({
+        "componente": "Tree-Sitter C Parser",
+        "estado": "OK" if ts_ok else "ERROR",
+        "requerido": True,
+        "detalle": ts_det,
+    })
+
+    todo_ok = py_ok and ts_ok
+
+    if json_output:
+        payload = {
+            "schema_version": "1.0.0",
+            "herramienta": "zhora",
+            "ok": todo_ok,
+            "componentes": diagnostico,
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        raise typer.Exit(code=0 if todo_ok else 1)
+
+    tabla = Table(title="🏥 Diagnóstico del Entorno ZHORA (doctor)", border_style="cyan")
+    tabla.add_column("Componente", style="bold white")
+    tabla.add_column("Estado", justify="center")
+    tabla.add_column("Detalle")
+
+    for c in diagnostico:
+        color = "bold green" if c["estado"] == "OK" else "bold red"
+        simbolo = "✓" if c["estado"] == "OK" else "✗"
+        tabla.add_row(c["componente"], f"[{color}]{simbolo} {c['estado']}[/{color}]", c["detalle"])
+
+    console.print(tabla)
+    if not todo_ok:
+        console.print("\n[bold red]Ejecutá `pip install tree-sitter tree-sitter-c` para reparar dependencias faltantes.[/bold red]")
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def version():
     """Muestra la versión de ZHORA."""

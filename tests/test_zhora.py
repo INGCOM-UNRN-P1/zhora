@@ -1,5 +1,6 @@
 """Tests unitarios y de integración para ZHORA."""
 
+import json
 from pathlib import Path
 from typer.testing import CliRunner
 from zhora.cli import app
@@ -49,6 +50,18 @@ def test_cli_version():
     res = runner.invoke(app, ["version"])
     assert res.exit_code == 0
     assert "ZHORA" in res.output
+
+
+def test_cli_doctor():
+    res = runner.invoke(app, ["doctor"])
+    assert res.exit_code == 0
+    assert "doctor" in res.output.lower()
+
+    res_json = runner.invoke(app, ["doctor", "--json"])
+    assert res_json.exit_code == 0
+    data = json.loads(res_json.output)
+    assert data["herramienta"] == "zhora"
+    assert data["ok"] is True
 
 
 def test_ripley_plugin(tmp_path):
