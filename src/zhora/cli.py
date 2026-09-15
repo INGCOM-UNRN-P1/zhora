@@ -150,6 +150,73 @@ def report_cmd(
         print(md_content)
 
 
+CATALOGO_REGLAS_ZHORA = {
+    "ZH001": {
+        "code": "ZH001",
+        "alias_catedra": "0x500Dh",
+        "title": "Punto y coma final espurio",
+        "severity": "ERROR",
+        "description": "Macro que finaliza con punto y coma (;), rompiendo sentencias if/else y bloques de control.",
+        "suggestion": "Eliminá el ';' final de la definición de la macro.",
+    },
+    "ZH002": {
+        "code": "ZH002",
+        "alias_catedra": "0x500Ah",
+        "title": "Evaluación múltiple de parámetros",
+        "severity": "WARNING",
+        "description": "Parámetro evaluado más de una vez en la macro, causando efectos colaterales si el argumento contiene expresiones como x++.",
+        "suggestion": "Evaluá convertir la macro a función 'static inline' o almacená el parámetro en una variable temporal.",
+    },
+    "ZH003": {
+        "code": "ZH003",
+        "alias_catedra": "0x0013h",
+        "title": "Parámetros sin paréntesis defensivos",
+        "severity": "WARNING",
+        "description": "Parámetro de macro no envuelto individualmente en paréntesis (x), generando precedencia de operadores errónea.",
+        "suggestion": "Envolvé cada ocurrencia del parámetro entre paréntesis: (x).",
+    },
+    "ZH004": {
+        "code": "ZH004",
+        "alias_catedra": "0x0013h",
+        "title": "Cuerpo de expresión sin paréntesis globales",
+        "severity": "WARNING",
+        "description": "Cuerpo global de expresión matemática o lógica no protegido con paréntesis externos.",
+        "suggestion": "Envolvé toda la expresión de sustitución de la macro entre paréntesis: ((a) + (b)).",
+    },
+}
+
+
+@app.command("rules")
+@app.command("catalog")
+def rules_cmd(
+    json_output: bool = typer.Option(False, "--json", "-j", help="Emite el catálogo de reglas de macros en formato JSON versionado."),
+) -> None:
+    """Muestra el catálogo oficial de reglas de macros de ZHORA y su mapeo al namespace de cátedra."""
+    if json_output:
+        payload = {
+            "schema_version": "1.0.0",
+            "herramienta": "zhora",
+            "namespace_prefijo": "ZH",
+            "total_reglas": len(CATALOGO_REGLAS_ZHORA),
+            "reglas": list(CATALOGO_REGLAS_ZHORA.values()),
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return
+
+    tabla = Table(title=f"Catálogo de Reglas de Macros — ZHORA ({len(CATALOGO_REGLAS_ZHORA)} reglas)")
+    tabla.add_column("Código", style="bold cyan", justify="center")
+    tabla.add_column("Alias Cátedra", style="bold yellow", justify="center")
+    tabla.add_column("Severidad", justify="center")
+    tabla.add_column("Título", style="bold")
+    tabla.add_column("Descripción")
+
+    for r in CATALOGO_REGLAS_ZHORA.values():
+        sev_style = "bold red" if r["severity"] == "ERROR" else "bold yellow"
+        tabla.add_row(r["code"], r["alias_catedra"], f"[{sev_style}]{r['severity']}[/{sev_style}]", r["title"], r["description"])
+
+    console.print(tabla)
+
+
 @app.command()
 def version():
     """Muestra la versión de ZHORA."""
