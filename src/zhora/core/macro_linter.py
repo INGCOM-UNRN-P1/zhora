@@ -24,6 +24,36 @@ def get_c_parser() -> Parser:
     return _PARSER
 
 
+_LITERAL = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
+
+
+def _usos_sin_proteger(param: str, cuerpo: str) -> int:
+    """Cuenta los usos de `param` que un argumento con operadores de menor precedencia alteraría.
+
+    Un uso está protegido si es el único contenido de unos paréntesis/corchetes o
+    un argumento completo de una llamada (`(x)`, `f(x, y)`, `a[x]`). No se
+    reportan los operandos de `#`/`##` (no admiten paréntesis) ni los de `++`/`--`
+    (exigen un lvalue, así que un argumento con operadores no compilaría). La
+    comprobación previa buscaba la subcadena `(x)` en el cuerpo: `(++x)` la
+    incumplía y `((x) + x)` la cumplía pese a tener un uso sin proteger.
+    """
+    limpio = _LITERAL.sub(lambda m: " " * len(m.group()), cuerpo)
+    limpio = re.sub(r"\\\r?\n", "  ", limpio)
+    sin_proteger = 0
+    for m in re.finditer(rf"\b{re.escape(param)}\b", limpio):
+        antes = limpio[:m.start()].rstrip()
+        despues = limpio[m.end():].lstrip()
+        if antes.endswith("#") or despues.startswith("##"):
+            continue
+        if antes.endswith(("++", "--")) or despues.startswith(("++", "--")):
+            continue
+        previo, siguiente = antes[-1:], despues[:1]
+        if previo and previo in "([," and siguiente and siguiente in ")],":
+            continue
+        sin_proteger += 1
+    return sin_proteger
+
+
 def lint_macro_definition(
     macro_name: str,
     params_str: str | None,
@@ -73,7 +103,7 @@ def lint_macro_definition(
                 ))
 
             # Verificar si no está encerrado entre paréntesis defensivos
-            if f"({p})" not in body_clean:
+            if _usos_sin_proteger(p, body_clean):
                 issues.append(MacroIssue(
                     code="ZH003",
                     severity="ERROR",
