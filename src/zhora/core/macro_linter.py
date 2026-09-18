@@ -10,6 +10,7 @@ import tree_sitter_c as tsc
 from tree_sitter import Language, Parser, Node
 
 from zhora.core.models import MacroIssue
+from zhora.core.preprocesador import enmascarar_bloques_inactivos
 
 _C_LANGUAGE: Optional[Language] = None
 _PARSER: Optional[Parser] = None
@@ -104,6 +105,9 @@ def lint_file_macros(file_path: Path) -> List[MacroIssue]:
     """Escanea y audita todas las macros en un archivo C o H usando Tree-Sitter AST."""
     issues = []
     content = file_path.read_text(encoding="utf-8", errors="replace")
+    # El contenido de un `#if 0` no se compila: enmascararlo evita
+    # reportar hallazgos sobre código deliberadamente desactivado.
+    content = enmascarar_bloques_inactivos(content)
     source_bytes = content.encode("utf-8")
     parser = get_c_parser()
     tree = parser.parse(source_bytes)
