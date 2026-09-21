@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Dict, Any
+from zhora import __version__
 from zhora.core.macro_linter import lint_file_macros
 
 
@@ -10,6 +11,15 @@ class ZhoraPlugin:
 
     name = "macro_security"
     description = "Auditor de seguridad en macros del preprocesador (#define, efectos de lado, paréntesis)"
+
+    version = __version__
+
+    def is_available(self) -> bool:
+        return True
+
+    def execute(self, workspace: Path, manifest_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Firma común de los satélites de ripley (igual que kaneda/spunkmeyer)."""
+        return self.run({"source_dir": str(workspace)})
 
     def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
         source_dir = Path(context.get("source_dir", "."))
