@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from zhora.core.models import MacroAuditReport
-from zhora.core.macro_linter import lint_file_macros
+from zhora.core.macro_linter import escanear_macros
 
 app = typer.Typer(
     name="zhora",
@@ -16,6 +16,55 @@ app = typer.Typer(
     add_completion=True
 )
 console = Console()
+
+SUFIJOS_C = {".c", ".h"}
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        from zhora import __version__
+        typer.echo(f"zhora {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main_callback(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", callback=_version_callback, is_eager=True,
+        help="Muestra la versión de zhora y sale.",
+    ),
+) -> None:
+    """Linter y auditor de seguridad en macros del preprocesador C (#define)."""
+
+
+def _recolectar_archivos(paths: List[Path]) -> List[Path]:
+    """Archivos .c/.h a analizar: los directorios se recorren; un archivo explícito debe ser C/H."""
+    files: List[Path] = []
+    for p in paths:
+        if p.is_file():
+            if p.suffix.lower() in SUFIJOS_C:
+                files.append(p)
+            else:
+                console.print(f"[yellow]Se ignora '{p}': no es un archivo .c/.h.[/yellow]")
+        elif p.is_dir():
+            files.extend(sorted(list(p.glob("**/*.h")) + list(p.glob("**/*.c"))))
+    return files
+
+
+def _auditar(files: List[Path]) -> MacroAuditReport:
+    all_issues = []
+    total_macros = 0
+    for f in files:
+        issues, n = escanear_macros(f)
+        all_issues.extend(issues)
+        total_macros += n
+    has_errors = any(i.severity == "ERROR" for i in all_issues)
+    return MacroAuditReport(
+        total_files_scanned=len(files),
+        total_macros_scanned=total_macros,
+        issues=all_issues,
+        passed=not has_errors,
+    )
 
 
 def generar_seccion_markdown(report: MacroAuditReport) -> str:
@@ -49,29 +98,19 @@ def audit(
     json_output: bool = typer.Option(False, "--json", help="Emitir salida en formato JSON estructurado"),
     output_md: Optional[Path] = typer.Option(None, "--md", "--output-md", help="Generar sección de reporte en formato Markdown para fusión en Dredd."),
 ):
-    """Audita macros #define en busca de efectos de lado, falta de paréntesis o puntos y coma."""
-    files_to_check: List[Path] = []
-    for p in paths:
-        if p.is_file():
-            files_to_check.append(p)
-        elif p.is_dir():
-            files_to_check.extend(list(p.glob("**/*.h")) + list(p.glob("**/*.c")))
+    """Audita macros #define en busca de efectos de lado, falta de paréntesis o puntos y coma.
+
+    Exit code: 1 solo si hay hallazgos de severidad ERROR (ZH001, ZH003); los WARNING
+    (ZH002, ZH004) se informan pero salen con 0.
+    """
+    files_to_check = _recolectar_archivos(paths)
 
     if not files_to_check:
         console.print("[yellow]No se encontraron archivos C/H para auditar macros.[/yellow]")
         raise typer.Exit(code=0)
 
-    all_issues = []
-    for f in files_to_check:
-        all_issues.extend(lint_file_macros(f))
-
-    has_errors = any(i.severity == "ERROR" for i in all_issues)
-    report = MacroAuditReport(
-        total_files_scanned=len(files_to_check),
-        total_macros_scanned=len(all_issues),
-        issues=all_issues,
-        passed=not has_errors
-    )
+    report = _auditar(files_to_check)
+    all_issues = report.issues
 
     if output_md:
         md_text = generar_seccion_markdown(report)
@@ -130,17 +169,8 @@ def report_cmd(
         elif p.is_dir():
             files_to_check.extend(list(p.glob("**/*.h")) + list(p.glob("**/*.c")))
 
-    all_issues = []
-    for f in files_to_check:
-        all_issues.extend(lint_file_macros(f))
-
-    has_errors = any(i.severity == "ERROR" for i in all_issues)
-    report = MacroAuditReport(
-        total_files_scanned=len(files_to_check),
-        total_macros_scanned=len(all_issues),
-        issues=all_issues,
-        passed=not has_errors
-    )
+    report = _auditar(files_to_check)
+    all_issues = report.issues
     md_content = generar_seccion_markdown(report)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -276,7 +306,7 @@ def doctor_cmd(
         raise typer.Exit(code=1)
 
 
-@app.command()
+@app.command(hidden=True)
 def version():
     """Muestra la versión de ZHORA."""
     from zhora import __version__

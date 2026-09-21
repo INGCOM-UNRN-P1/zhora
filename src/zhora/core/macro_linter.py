@@ -133,7 +133,13 @@ def lint_macro_definition(
 
 def lint_file_macros(file_path: Path) -> List[MacroIssue]:
     """Escanea y audita todas las macros en un archivo C o H usando Tree-Sitter AST."""
+    return escanear_macros(file_path)[0]
+
+
+def escanear_macros(file_path: Path) -> Tuple[List[MacroIssue], int]:
+    """Audita un archivo y devuelve (hallazgos, cantidad de macros `#define` analizadas)."""
     issues = []
+    total = 0
     content = file_path.read_text(encoding="utf-8", errors="replace")
     # El contenido de un `#if 0` no se compila: enmascararlo evita
     # reportar hallazgos sobre código deliberadamente desactivado.
@@ -143,7 +149,9 @@ def lint_file_macros(file_path: Path) -> List[MacroIssue]:
     tree = parser.parse(source_bytes)
 
     def _traverse(node: Node) -> None:
+        nonlocal total
         if node.type in ("preproc_def", "preproc_function_def"):
+            total += 1
             name_node = node.child_by_field_name("name")
             params_node = node.child_by_field_name("parameters")
             val_node = node.child_by_field_name("value")
@@ -168,4 +176,4 @@ def lint_file_macros(file_path: Path) -> List[MacroIssue]:
             _traverse(child)
 
     _traverse(tree.root_node)
-    return issues
+    return issues, total
