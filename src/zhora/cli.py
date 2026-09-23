@@ -69,8 +69,9 @@ def _auditar(files: List[Path]) -> MacroAuditReport:
 
 def generar_seccion_markdown(report: MacroAuditReport) -> str:
     """Genera sección de auditoría de seguridad en macros para Dredd."""
+    status = "ok" if report.passed else "fail"
     lines = [
-        "<!-- dredd-section: zhora v1.0.0 -->\n",
+        f"<!-- dredd-section: zhora, tool=zhora, version=1.0.0, status={status} -->\n",
         "## Seguridad en Macros del Preprocesador (Zhora)\n",
     ]
     lines.append(f"- **Archivos escaneados:** {report.total_files_scanned}")
