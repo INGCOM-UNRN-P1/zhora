@@ -11,6 +11,7 @@ from zhora.core.models import MacroAuditReport
 from zhora.core.macro_linter import escanear_macros
 
 app = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
     name="zhora",
     help="Linter y auditor de seguridad en macros del preprocesador C (#define)",
     add_completion=True
