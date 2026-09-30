@@ -4,38 +4,26 @@ import json
 from pathlib import Path
 from typing import List, Optional
 import typer
+from yutani.cli import crear_app
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from zhora import __version__
 from zhora.core.models import MacroAuditReport
 from zhora.core.macro_linter import escanear_macros
 
-app = typer.Typer(
-    context_settings={"help_option_names": ["-h", "--help"]},
-    name="zhora",
-    help="Linter y auditor de seguridad en macros del preprocesador C (#define)",
-    add_completion=True
+# Contrato de línea de comandos del ecosistema (-h/--help, --version/-v, errores de datos como
+# mensajes) y textos de Typer en español, desde yutani (N-ECO-14).
+app = crear_app(
+    "zhora",
+    __version__,
+    "Linter y auditor de seguridad en macros del preprocesador C (#define)",
+    add_completion=True,
+    no_args_is_help=False,
 )
 console = Console()
 
 SUFIJOS_C = {".c", ".h"}
-
-
-def _version_callback(value: bool) -> None:
-    if value:
-        from zhora import __version__
-        typer.echo(f"zhora {__version__}")
-        raise typer.Exit()
-
-
-@app.callback()
-def main_callback(
-    version: Optional[bool] = typer.Option(
-        None, "--version", "-v", callback=_version_callback, is_eager=True,
-        help="Muestra la versión de zhora y sale.",
-    ),
-) -> None:
-    """Linter y auditor de seguridad en macros del preprocesador C (#define)."""
 
 
 def _recolectar_archivos(paths: List[Path]) -> List[Path]:
