@@ -56,3 +56,24 @@ zhora audit src/ --json
 - **`ZH002`**: Parámetros evaluados más de una vez (riesgo de side effects con `x++`).
 - **`ZH003`**: Parámetros de macro no envueltos individualmente en paréntesis `(x)`.
 - **`ZH004`**: Cuerpo de expresión matemática no protegido con paréntesis externos.
+
+<!-- p1:referencia:inicio — generado por p1-tools/scripts/readme_generado.py: no editar a mano -->
+
+## Referencia rápida
+
+### Requisitos
+
+- Python ≥ 3.11 y [uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+### Comandos
+
+| Comando | Descripción |
+|:--|:--|
+| `zhora check`, `zhora audit` | Audita macros #define en busca de efectos de lado, falta de paréntesis o puntos y coma. |
+| `zhora report` | Genera directamente la sección de reporte Markdown de ZHORA para Dredd. |
+| `zhora catalog`, `zhora rules` | Muestra el catálogo oficial de reglas de macros de ZHORA y su mapeo al namespace de cátedra. |
+| `zhora doctor` | Verifica el estado del entorno de auditoría de macros ZHORA (Tree-Sitter C, Python). |
+
+Ayuda de cada comando: `zhora <comando> -h`.
+
+<!-- p1:referencia:fin -->
