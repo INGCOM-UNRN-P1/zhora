@@ -54,6 +54,36 @@ def _usos_sin_proteger(param: str, cuerpo: str) -> int:
     return sin_proteger
 
 
+_DO_WHILE_0 = re.compile(r"^do\s*\{.*\}\s*while\s*\(\s*0\s*\)$", re.DOTALL)
+
+
+def _sin_continuaciones(cuerpo: str) -> str:
+    return re.sub(r"\\\r?\n", " ", cuerpo).strip()
+
+
+def es_multisentencia(cuerpo: str) -> bool:
+    """El cuerpo tiene más de una sentencia (`;` en el medio) o un bloque `{ }` suelto."""
+    limpio = _LITERAL.sub(lambda m: " " * len(m.group()), _sin_continuaciones(cuerpo))
+    if _DO_WHILE_0.match(limpio):
+        return False
+    return ";" in limpio.rstrip(";") or limpio.startswith("{")
+
+
+def sugerir_inline(nombre: str, params: List[str], cuerpo: str) -> Optional[str]:
+    """La función `static inline` equivalente a una macro de expresión (QoL #1088). Los tipos no
+    se pueden deducir de la macro: se propone `int` y hay que ajustarlos."""
+    limpio = _sin_continuaciones(cuerpo)
+    if not params or "#" in limpio or ";" in limpio or "{" in limpio:
+        return None
+    expresion = limpio
+    for p in params:
+        expresion = re.sub(rf"\(\s*{re.escape(p)}\s*\)", p, expresion)
+    if expresion.startswith("(") and expresion.endswith(")"):
+        expresion = expresion[1:-1].strip()
+    argumentos = ", ".join(f"int {p}" for p in params)
+    return f"static inline int {nombre.lower()}({argumentos})  /* ajustá los tipos */\n{{\n    return {expresion};\n}}"
+
+
 def lint_macro_definition(
     macro_name: str,
     params_str: str | None,
@@ -81,6 +111,19 @@ def lint_macro_definition(
             raw_macro=raw_line,
             message=f"La macro '{macro_name}' finaliza con punto y coma (';').",
             suggestion="Eliminá el punto y coma final del #define para evitar errores sintácticos al invocarla dentro de sentencias if/else."
+        ))
+
+    # ZH005 (QoL #1089): varias sentencias sin `do { ... } while (0)`
+    if es_multisentencia(body_clean):
+        issues.append(MacroIssue(
+            code="ZH005",
+            severity="ERROR",
+            macro_name=macro_name,
+            file_path=file_path,
+            line_number=line_no,
+            raw_macro=raw_line,
+            message=f"La macro '{macro_name}' tiene varias sentencias sin 'do {{ ... }} while (0)': dentro de un if sin llaves solo la primera queda condicionada, y con un else no compila.",
+            suggestion=f"Envolvé el cuerpo: #define {macro_name}{'(' + params_str + ')' if params_str is not None else ''} do {{ ... }} while (0)",
         ))
 
     # Si tiene parámetros (macro tipo función)
@@ -127,6 +170,13 @@ def lint_macro_definition(
                 message=f"El cuerpo completo de la macro '{macro_name}' no está envuelto en paréntesis externos.",
                 suggestion=f"Envolvé toda la expresión en '(' y ')': #define {macro_name}(...) ({body_clean})"
             ))
+
+    # Las macros de expresión riesgosas (ZH002 a ZH004) llevan la función equivalente (QoL #1088).
+    if params_str is not None:
+        inline = sugerir_inline(macro_name, [p.strip() for p in params_str.split(",") if p.strip()], body_clean)
+        for issue in issues:
+            if issue.code in ("ZH002", "ZH003", "ZH004"):
+                issue.suggested_inline = inline
 
     return issues
 

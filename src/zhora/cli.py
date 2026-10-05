@@ -139,6 +139,7 @@ def audit(
             iss.macro_name,
             f"{Path(iss.file_path).name}:{iss.line_number}",
             f"{iss.message}\n[dim]↳ Sugerencia: {iss.suggestion}[/dim]"
+            + (f"\n[green]↳ Como función:[/green]\n{iss.suggested_inline}" if iss.suggested_inline else "")
         )
 
     console.print(table)
@@ -202,6 +203,14 @@ CATALOGO_REGLAS_ZHORA = {
         "severity": "WARNING",
         "description": "Cuerpo global de expresión matemática o lógica no protegido con paréntesis externos.",
         "suggestion": "Envolvé toda la expresión de sustitución de la macro entre paréntesis: ((a) + (b)).",
+    },
+    "ZH005": {
+        "code": "ZH005",
+        "alias_catedra": "0x500Ah",
+        "title": "Macro de varias sentencias sin do { } while (0)",
+        "severity": "ERROR",
+        "description": "Macro con varias sentencias o un bloque suelto: dentro de un if sin llaves solo la primera sentencia queda condicionada, y seguida de else no compila.",
+        "suggestion": "Envolvé el cuerpo en do { ... } while (0) o convertila en una función.",
     },
 }
 

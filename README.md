@@ -9,7 +9,7 @@
 ## 🎯 Alcance
 
 ### Qué cubre
-- Linter pedagógico y auditor de seguridad de macros del preprocesador en C (`#define`, reglas `ZH001` a `ZH004`).
+- Linter pedagógico y auditor de seguridad de macros del preprocesador en C (`#define`, reglas `ZH001` a `ZH005`).
 - Verificación defensiva de paréntesis en parámetros y cuerpo de macros (`ZH003`, `ZH004`).
 - Detección de puntos y coma espurios al final de definiciones de macros (`ZH001`).
 - Detección de efectos colaterales indeseados por evaluación múltiple de argumentos en llamadas a macros (`ZH002`).
@@ -56,6 +56,10 @@ zhora audit src/ --json
 - **`ZH002`**: Parámetros evaluados más de una vez (riesgo de side effects con `x++`).
 - **`ZH003`**: Parámetros de macro no envueltos individualmente en paréntesis `(x)`.
 - **`ZH004`**: Cuerpo de expresión matemática no protegido con paréntesis externos.
+- **`ZH005`**: Macros de varias sentencias (o con un bloque `{ }` suelto) sin `do { ... } while (0)`: dentro de un `if` sin llaves solo la primera sentencia queda condicionada.
+
+En `ZH002`, `ZH003` y `ZH004` el hallazgo trae además la función `static inline` equivalente
+(`suggested_inline` en el JSON), con `int` como tipo provisorio para ajustar.
 
 <!-- p1:referencia:inicio — generado por p1-tools/scripts/readme_generado.py: no editar a mano -->
 
