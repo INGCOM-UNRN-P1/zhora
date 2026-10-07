@@ -206,17 +206,17 @@ def escanear_macros(file_path: Path) -> Tuple[List[MacroIssue], int]:
             params_node = node.child_by_field_name("parameters")
             val_node = node.child_by_field_name("value")
 
-            macro_name = name_node.text.decode("utf-8", errors="replace") if name_node else "ANON_MACRO"
+            macro_name = (name_node.text or b"").decode("utf-8", errors="replace") if name_node else "ANON_MACRO"
             params_str = None
             if params_node:
-                raw_p = params_node.text.decode("utf-8", errors="replace").strip()
+                raw_p = (params_node.text or b"").decode("utf-8", errors="replace").strip()
                 if raw_p.startswith("(") and raw_p.endswith(")"):
                     raw_p = raw_p[1:-1]
                 params_str = raw_p
 
-            body_str = val_node.text.decode("utf-8", errors="replace") if val_node else ""
+            body_str = (val_node.text or b"").decode("utf-8", errors="replace") if val_node else ""
             line_no = node.start_point.row + 1
-            raw_line = node.text.decode("utf-8", errors="replace")
+            raw_line = (node.text or b"").decode("utf-8", errors="replace")
 
             issues.extend(lint_macro_definition(
                 macro_name, params_str, body_str, str(file_path), line_no, raw_line
