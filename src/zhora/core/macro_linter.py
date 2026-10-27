@@ -129,10 +129,12 @@ def lint_macro_definition(
     # Si tiene parámetros (macro tipo función)
     if params_str is not None:
         params = [p.strip() for p in params_str.split(",") if p.strip()]
+        body_no_literals = _LITERAL.sub(lambda m: " " * len(m.group()), body_clean)
+        body_no_str_op = re.sub(r"#\s*[a-zA-Z_]\w*", " ", body_no_literals)
 
         for p in params:
-            # Buscar si el parámetro aparece más de una vez (riesgo de side effects: x++)
-            occurrences = len(re.findall(rf'\b{re.escape(p)}\b', body_clean))
+            # Buscar si el parámetro aparece más de una vez fuera de literales y #p (riesgo de side effects: x++)
+            occurrences = len(re.findall(rf'\b{re.escape(p)}\b', body_no_str_op))
             if occurrences > 1:
                 issues.append(MacroIssue(
                     code="ZH002",
@@ -158,8 +160,14 @@ def lint_macro_definition(
                     suggestion=f"Escribí '({p})' en cada uso dentro del cuerpo de la macro para evitar alteraciones de precedencia de operadores."
                 ))
 
-        # ZH004: Cuerpo global de expresión matemática no protegido
-        if any(op in body_clean for op in ['+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^']) and not (body_clean.startswith("(") and body_clean.endswith(")")):
+        # ZH004: Cuerpo global de expresión matemática no protegido (solo en macros de expresión, no multisentencia ni do-while)
+        es_do_while = bool(_DO_WHILE_0.match(_sin_continuaciones(body_no_literals)))
+        if (
+            not es_do_while
+            and not es_multisentencia(body_clean)
+            and any(op in body_no_literals for op in ['+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^'])
+            and not (body_clean.startswith("(") and body_clean.endswith(")"))
+        ):
             issues.append(MacroIssue(
                 code="ZH004",
                 severity="WARNING",
@@ -200,11 +208,12 @@ def escanear_macros(file_path: Path) -> Tuple[List[MacroIssue], int]:
 
     def _traverse(node: Node) -> None:
         nonlocal total
+        hijos = node.children
         if node.type in ("preproc_def", "preproc_function_def"):
             total += 1
-            name_node = node.child_by_field_name("name")
-            params_node = node.child_by_field_name("parameters")
-            val_node = node.child_by_field_name("value")
+            name_node = next((c for c in hijos if c.type == "identifier"), None)
+            params_node = next((c for c in hijos if c.type == "preproc_params"), None)
+            val_node = next((c for c in hijos if c.type == "preproc_arg"), None)
 
             macro_name = (name_node.text or b"").decode("utf-8", errors="replace") if name_node else "ANON_MACRO"
             params_str = None
@@ -222,7 +231,7 @@ def escanear_macros(file_path: Path) -> Tuple[List[MacroIssue], int]:
                 macro_name, params_str, body_str, str(file_path), line_no, raw_line
             ))
 
-        for child in node.children:
+        for child in hijos:
             _traverse(child)
 
     _traverse(tree.root_node)

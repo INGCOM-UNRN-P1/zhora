@@ -1,7 +1,6 @@
 """Tests unitarios y de integración para ZHORA."""
 
 import json
-from pathlib import Path
 from typer.testing import CliRunner
 from zhora.cli import app
 from zhora.core.macro_linter import lint_file_macros
@@ -117,3 +116,21 @@ def test_plugin_firma_comun_execute(tmp_path):
     assert plugin.is_available()
     res = plugin.execute(tmp_path, {})
     assert res["passed"] is False and res["issues_count"] >= 1
+
+
+def test_calibracion_literales_y_do_while_sin_falsos_positivos(tmp_path):
+    h = tmp_path / "calibrado.h"
+    h.write_text(
+        '#define LOG_X(x) printf("x - 1 = %d\\n", (x))\n'
+        '#define INC_SEGURA(v) do { (v) = (v) + 1; } while (0)\n',
+        encoding="utf-8",
+    )
+    issues = lint_file_macros(h)
+    assert [i.code for i in issues if i.macro_name == "LOG_X"] == []
+    assert [i.code for i in issues if i.macro_name == "INC_SEGURA"] == ["ZH002"]
+
+    res_cat = runner.invoke(app, ["rules", "--json"])
+    datos = json.loads(res_cat.stdout)
+    reglas = {r["code"]: r for r in datos["reglas"]}
+    assert reglas["ZH003"]["severity"] == "ERROR"
+    assert all(r["dueno"] == "zhora" for r in datos["reglas"])

@@ -161,7 +161,6 @@ def report_cmd(
             files_to_check.extend(list(p.glob("**/*.h")) + list(p.glob("**/*.c")))
 
     report = _auditar(files_to_check)
-    all_issues = report.issues
     md_content = generar_seccion_markdown(report)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -175,6 +174,7 @@ CATALOGO_REGLAS_ZHORA = {
     "ZH001": {
         "code": "ZH001",
         "alias_catedra": "0x500Dh",
+        "dueno": "zhora",
         "title": "Punto y coma final espurio",
         "severity": "ERROR",
         "description": "Macro que finaliza con punto y coma (;), rompiendo sentencias if/else y bloques de control.",
@@ -183,6 +183,7 @@ CATALOGO_REGLAS_ZHORA = {
     "ZH002": {
         "code": "ZH002",
         "alias_catedra": "0x500Ah",
+        "dueno": "zhora",
         "title": "Evaluación múltiple de parámetros",
         "severity": "WARNING",
         "description": "Parámetro evaluado más de una vez en la macro, causando efectos colaterales si el argumento contiene expresiones como x++.",
@@ -191,14 +192,16 @@ CATALOGO_REGLAS_ZHORA = {
     "ZH003": {
         "code": "ZH003",
         "alias_catedra": "0x0013h",
+        "dueno": "zhora",
         "title": "Parámetros sin paréntesis defensivos",
-        "severity": "WARNING",
+        "severity": "ERROR",
         "description": "Parámetro de macro no envuelto individualmente en paréntesis (x), generando precedencia de operadores errónea.",
         "suggestion": "Envolvé cada ocurrencia del parámetro entre paréntesis: (x).",
     },
     "ZH004": {
         "code": "ZH004",
         "alias_catedra": "0x0013h",
+        "dueno": "zhora",
         "title": "Cuerpo de expresión sin paréntesis globales",
         "severity": "WARNING",
         "description": "Cuerpo global de expresión matemática o lógica no protegido con paréntesis externos.",
@@ -207,6 +210,7 @@ CATALOGO_REGLAS_ZHORA = {
     "ZH005": {
         "code": "ZH005",
         "alias_catedra": "0x500Ah",
+        "dueno": "zhora",
         "title": "Macro de varias sentencias sin do { } while (0)",
         "severity": "ERROR",
         "description": "Macro con varias sentencias o un bloque suelto: dentro de un if sin llaves solo la primera sentencia queda condicionada, y seguida de else no compila.",
