@@ -90,7 +90,7 @@ def audit(
 ):
     """Audita macros #define en busca de efectos de lado, falta de paréntesis o puntos y coma.
 
-    Exit code: 1 solo si hay hallazgos de severidad ERROR (ZH001, ZH003); los WARNING
+    Exit code: 1 solo si hay hallazgos de severidad ERROR (ZH001, ZH003); los `WARNING`
     (ZH002, ZH004) se informan pero salen con 0.
     """
     files_to_check = _recolectar_archivos(paths)
